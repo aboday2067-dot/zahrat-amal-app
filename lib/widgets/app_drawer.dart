@@ -157,10 +157,7 @@ class _AppDrawerState extends State<AppDrawer> {
         'المنتجات المفضلة',
         Icons.favorite,
         Colors.red,
-        () {
-          // TODO: Navigate to favorites
-          Navigator.pop(context);
-        },
+        () => Navigator.pushNamed(context, '/buyer/favorites'),
       ),
       const Divider(),
       _buildMenuSection('حسابي', Icons.person),
@@ -174,19 +171,13 @@ class _AppDrawerState extends State<AppDrawer> {
         'طلباتي',
         Icons.list_alt,
         Colors.purple,
-        () {
-          // TODO: Navigate to orders
-          Navigator.pop(context);
-        },
+        () => Navigator.pushNamed(context, '/buyer/orders'),
       ),
       _buildMenuItem(
         'عناويني',
         Icons.location_on,
         Colors.teal,
-        () {
-          // TODO: Navigate to addresses
-          Navigator.pop(context);
-        },
+        () => Navigator.pushNamed(context, '/buyer/addresses'),
       ),
       const Divider(),
       _buildMenuSection('أخرى', Icons.more_horiz),
@@ -194,19 +185,13 @@ class _AppDrawerState extends State<AppDrawer> {
         'الإعدادات',
         Icons.settings,
         Colors.grey,
-        () {
-          // TODO: Navigate to settings
-          Navigator.pop(context);
-        },
+        () => Navigator.pushNamed(context, '/settings'),
       ),
       _buildMenuItem(
         'المساعدة والدعم',
         Icons.help,
         Colors.blueGrey,
-        () {
-          // TODO: Navigate to help
-          Navigator.pop(context);
-        },
+        () => Navigator.pushNamed(context, '/help'),
       ),
     ];
   }
@@ -250,19 +235,13 @@ class _AppDrawerState extends State<AppDrawer> {
         'الطلبات',
         Icons.list_alt,
         Colors.orange,
-        () {
-          // TODO: Navigate to orders
-          Navigator.pop(context);
-        },
+        () => Navigator.pushNamed(context, '/merchant/orders'),
       ),
       _buildMenuItem(
         'التحليلات',
         Icons.analytics,
         Colors.deepPurple,
-        () {
-          // TODO: Navigate to analytics
-          Navigator.pop(context);
-        },
+        () => Navigator.pushNamed(context, '/merchant/analytics'),
       ),
       const Divider(),
       _buildMenuSection('أخرى', Icons.more_horiz),
@@ -270,10 +249,7 @@ class _AppDrawerState extends State<AppDrawer> {
         'الإعدادات',
         Icons.settings,
         Colors.grey,
-        () {
-          // TODO: Navigate to settings
-          Navigator.pop(context);
-        },
+        () => Navigator.pushNamed(context, '/settings'),
       ),
     ];
   }
@@ -297,19 +273,13 @@ class _AppDrawerState extends State<AppDrawer> {
         'التوصيلات النشطة',
         Icons.pending_actions,
         Colors.blue,
-        () {
-          // TODO: Navigate to active deliveries
-          Navigator.pop(context);
-        },
+        () => Navigator.pushNamed(context, '/delivery/active'),
       ),
       _buildMenuItem(
         'سجل التوصيلات',
         Icons.history,
         Colors.purple,
-        () {
-          // TODO: Navigate to delivery history
-          Navigator.pop(context);
-        },
+        () => Navigator.pushNamed(context, '/delivery/history'),
       ),
       const Divider(),
       _buildMenuSection('إدارة الفريق', Icons.people),
@@ -317,19 +287,13 @@ class _AppDrawerState extends State<AppDrawer> {
         'العمال',
         Icons.people_outline,
         Colors.green,
-        () {
-          // TODO: Navigate to agents
-          Navigator.pop(context);
-        },
+        () => Navigator.pushNamed(context, '/delivery/agents'),
       ),
       _buildMenuItem(
         'مناطق التغطية',
         Icons.map,
         Colors.teal,
-        () {
-          // TODO: Navigate to coverage areas
-          Navigator.pop(context);
-        },
+        () => Navigator.pushNamed(context, '/delivery/coverage'),
       ),
       const Divider(),
       _buildMenuSection('أخرى', Icons.more_horiz),
@@ -337,19 +301,13 @@ class _AppDrawerState extends State<AppDrawer> {
         'الإحصائيات',
         Icons.bar_chart,
         Colors.indigo,
-        () {
-          // TODO: Navigate to statistics
-          Navigator.pop(context);
-        },
+        () => Navigator.pushNamed(context, '/delivery/statistics'),
       ),
       _buildMenuItem(
         'الإعدادات',
         Icons.settings,
         Colors.grey,
-        () {
-          // TODO: Navigate to settings
-          Navigator.pop(context);
-        },
+        () => Navigator.pushNamed(context, '/settings'),
       ),
     ];
   }
@@ -389,19 +347,13 @@ class _AppDrawerState extends State<AppDrawer> {
         'المنتجات',
         Icons.inventory_2,
         Colors.purple,
-        () {
-          // TODO: Navigate to products management
-          Navigator.pop(context);
-        },
+        () => Navigator.pushNamed(context, '/admin/products'),
       ),
       _buildMenuItem(
         'الطلبات',
         Icons.list_alt,
         Colors.indigo,
-        () {
-          // TODO: Navigate to orders management
-          Navigator.pop(context);
-        },
+        () => Navigator.pushNamed(context, '/admin/orders'),
       ),
       const Divider(),
       _buildMenuSection('التقارير', Icons.assessment),
@@ -409,19 +361,13 @@ class _AppDrawerState extends State<AppDrawer> {
         'التقارير المالية',
         Icons.attach_money,
         Colors.green,
-        () {
-          // TODO: Navigate to financial reports
-          Navigator.pop(context);
-        },
+        () => Navigator.pushNamed(context, '/admin/financial'),
       ),
       _buildMenuItem(
         'تحليلات المنصة',
         Icons.analytics,
         Colors.deepPurple,
-        () {
-          // TODO: Navigate to platform analytics
-          Navigator.pop(context);
-        },
+        () => Navigator.pushNamed(context, '/admin/analytics'),
       ),
     ];
   }

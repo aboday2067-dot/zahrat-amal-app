@@ -1,26 +1,124 @@
-# Flutter/Dart
-# Build outputs (exclude to save space)
-/build/
-/.dart_tool/
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.buildlog/
+.history
+.svn/
+migrate_working_dir/
+
+# IntelliJ related
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# The .vscode folder contains launch configuration and tasks you configure in
+# VS Code which you may wish to be included in version control, so this line
+# is commented out by default.
+.vscode/
+
+# Flutter/Dart/Pub related
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
 .packages
 .pub-cache/
 .pub/
+/build/
 
-# IDE
+# Symbolication related
+app.*.symbols
+
+# Obfuscation related
+app.*.map.json
+
+# Android Studio will place build artifacts here
+/android/app/debug
+/android/app/profile
+/android/app/release
+
+# Android
+android/.gradle/
+android/.idea/
+android/local.properties
+android/captures/
+android/*.iml
+android/*.jks
+android/key.properties
+android/app/google-services.json
+
+# iOS
+ios/Flutter/.last_build_id
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/flutter_export_environment.sh
+ios/Flutter/Generated.xcconfig
+
+# Web
+.firebase/
+firebase-debug.log
+firestore-debug.log
+
+# Sensitive Firebase files
+lib/firebase_options.dart
+google-services.json
+firebase-admin-sdk.json
+**/firebase-admin-sdk*.json
+
+# Large binary files
+*.apk
+*.aab
+*.ipa
+
+# Backup and temporary files
+*.bak
+*~
+.tmp/
+temp/
+
+# Screenshots (optional - uncomment if you don't want to commit)
+# screenshots/
+# screenshots_resized/
+
+# Google Play Store files (optional)
+# screenshots_google_play.zip
+# google_play_package_complete.zip
+
+# Documentation build files
+docs/_build/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Coverage
+coverage/
+*.lcov
+
+# Test results
+test-results/
+
+# IDE specific
 .vscode/
 .idea/
-*.iml
+*.sublime-project
+*.sublime-workspace
 
-# OS Files
-.DS_Store
+# OS specific
 Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
 
-# Logs
-*.log
+# Node modules (if using any Node tools)
+node_modules/
 
-# Temporary files
-*.tmp
-*.temp
-
-# Keep lib/ directory for source code!
-
+# Lock files
+pubspec.lock

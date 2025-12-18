@@ -8,10 +8,10 @@ import 'package:http/http.dart' as http;
 /// 2. احصل على Account SID, Auth Token, وTwilio Phone Number
 /// 3. ضع البيانات في المتغيرات أدناه أو استخدم متغيرات البيئة
 class TwilioService {
-  // ⚠️ استبدل هذه البيانات بحساب Twilio الخاص بك
-  static const String _accountSid = 'YOUR_TWILIO_ACCOUNT_SID';
-  static const String _authToken = 'YOUR_TWILIO_AUTH_TOKEN';
-  static const String _twilioNumber = '+1234567890'; // رقم Twilio الخاص بك
+  // ✅ بيانات Twilio - تم التكوين
+  static const String _accountSid = 'AC65fcc8417d60897d02602200a9d5a219';
+  static const String _authToken = '5bf3eb77203ae9e70b5801a8f046c2bb';
+  static const String _twilioNumber = '+18444941678'; // رقم Twilio الخاص بك
   
   static String get _endpoint =>
       'https://api.twilio.com/2010-04-01/Accounts/$_accountSid/Messages.json';

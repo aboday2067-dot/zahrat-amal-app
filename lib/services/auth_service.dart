@@ -1,182 +1,258 @@
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../models/user_model.dart';
-import 'dart:convert';
+import '../services/unique_id_service.dart';
 
+/// خدمة المصادقة باستخدام Firebase Authentication
+/// تتعامل مع تسجيل الدخول، التسجيل، واستعادة كلمة المرور
 class AuthService {
-  static const String _usersKey = 'registered_users';
-  static const String _currentUserKey = 'current_user';
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  // تسجيل مستخدم جديد
-  Future<Map<String, dynamic>> register({
-    required String name,
+  /// الحصول على المستخدم الحالي
+  User? get currentUser => _auth.currentUser;
+
+  /// تسجيل مستخدم جديد
+  Future<Map<String, dynamic>> signUp({
     required String email,
-    required String phone,
     required String password,
+    required String displayName,
+    required String phone,
     required String userType,
   }) async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      
-      // التحقق من عدم تكرار الإيميل أو الهاتف
-      final existingUsers = await _getAllUsers();
-      final emailExists = existingUsers.any((u) => u.email == email);
-      final phoneExists = existingUsers.any((u) => u.phone == phone);
-      
-      if (emailExists) {
-        return {'success': false, 'message': 'البريد الإلكتروني مسجل مسبقاً'};
-      }
-      if (phoneExists) {
-        return {'success': false, 'message': 'رقم الهاتف مسجل مسبقاً'};
-      }
-
-      // إنشاء مستخدم جديد برقم فريد
-      final uniqueId = UserModel.generateUniqueId(userType);
-      final user = UserModel(
-        uniqueId: uniqueId,
-        name: name,
+      // إنشاء حساب في Firebase Auth
+      UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
         email: email,
-        phone: phone,
-        userType: userType,
-        createdAt: DateTime.now(),
+        password: password,
       );
 
-      // حفظ المستخدم
-      existingUsers.add(user);
-      await _saveUsers(existingUsers);
-      
-      // حفظ كلمة المرور (في تطبيق حقيقي يجب تشفيرها)
-      await prefs.setString('password_$uniqueId', password);
+      User? user = userCredential.user;
+      if (user == null) {
+        return {
+          'success': false,
+          'message': 'فشل إنشاء الحساب',
+        };
+      }
+
+      // تحديث اسم المستخدم
+      await user.updateDisplayName(displayName);
+
+      // توليد معرف فريد
+      String uniqueId = await UniqueIdService.generateUniqueId();
+
+      // حفظ بيانات المستخدم في Firestore
+      await _firestore.collection('users').doc(user.uid).set({
+        'uid': user.uid,
+        'email': email,
+        'displayName': displayName,
+        'phone': phone,
+        'userType': userType,
+        'uniqueId': uniqueId,
+        'createdAt': FieldValue.serverTimestamp(),
+        'lastLogin': FieldValue.serverTimestamp(),
+        'isActive': true,
+      });
+
+      // حفظ البيانات محلياً
+      await _saveUserDataLocally(user.uid, email, displayName, phone, userType, uniqueId);
 
       return {
         'success': true,
-        'message': 'تم التسجيل بنجاح',
+        'message': 'تم إنشاء الحساب بنجاح',
+        'userId': user.uid,
         'uniqueId': uniqueId,
-        'user': user,
+      };
+    } on FirebaseAuthException catch (e) {
+      String message = _getArabicErrorMessage(e.code);
+      return {
+        'success': false,
+        'message': message,
       };
     } catch (e) {
-      return {'success': false, 'message': 'حدث خطأ: $e'};
+      return {
+        'success': false,
+        'message': 'حدث خطأ: $e',
+      };
     }
   }
 
-  // تسجيل الدخول بالإيميل أو الهاتف أو الرقم الفريد
-  Future<Map<String, dynamic>> login({
-    required String identifier, // email, phone, or uniqueId
+  /// تسجيل الدخول بالبريد الإلكتروني وكلمة المرور
+  Future<Map<String, dynamic>> signInWithEmail({
+    required String email,
     required String password,
   }) async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final users = await _getAllUsers();
+      // تسجيل الدخول
+      UserCredential userCredential = await _auth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
 
-      // البحث عن المستخدم
-      UserModel? user;
-      for (var u in users) {
-        if (u.email == identifier ||
-            u.phone == identifier ||
-            u.uniqueId == identifier) {
-          user = u;
-          break;
-        }
-      }
-
+      User? user = userCredential.user;
       if (user == null) {
-        return {'success': false, 'message': 'المستخدم غير موجود'};
+        return {
+          'success': false,
+          'message': 'فشل تسجيل الدخول',
+        };
       }
 
-      if (!user.isActive) {
-        return {'success': false, 'message': 'الحساب معطل'};
+      // جلب بيانات المستخدم من Firestore
+      DocumentSnapshot userDoc = await _firestore.collection('users').doc(user.uid).get();
+      
+      if (!userDoc.exists) {
+        return {
+          'success': false,
+          'message': 'حساب المستخدم غير موجود في قاعدة البيانات',
+        };
       }
 
-      // التحقق من كلمة المرور
-      final savedPassword = prefs.getString('password_${user.uniqueId}');
-      if (savedPassword != password) {
-        return {'success': false, 'message': 'كلمة المرور غير صحيحة'};
-      }
+      Map<String, dynamic> userData = userDoc.data() as Map<String, dynamic>;
 
-      // حفظ بيانات الجلسة
-      await prefs.setBool('isLoggedIn', true);
-      await prefs.setString('userType', user.userType);
-      await prefs.setString('uniqueId', user.uniqueId);
-      await prefs.setString('userName', user.name);
-      await prefs.setString('userEmail', user.email);
-      await prefs.setString(_currentUserKey, json.encode(user.toJson()));
+      // تحديث آخر تسجيل دخول
+      await _firestore.collection('users').doc(user.uid).update({
+        'lastLogin': FieldValue.serverTimestamp(),
+      });
+
+      // حفظ البيانات محلياً
+      await _saveUserDataLocally(
+        user.uid,
+        userData['email'] ?? email,
+        userData['displayName'] ?? 'مستخدم',
+        userData['phone'] ?? '',
+        userData['userType'] ?? 'buyer',
+        userData['uniqueId'] ?? '',
+      );
 
       return {
         'success': true,
         'message': 'تم تسجيل الدخول بنجاح',
-        'user': user,
+        'userId': user.uid,
+        'userType': userData['userType'] ?? 'buyer',
+      };
+    } on FirebaseAuthException catch (e) {
+      String message = _getArabicErrorMessage(e.code);
+      return {
+        'success': false,
+        'message': message,
       };
     } catch (e) {
-      return {'success': false, 'message': 'حدث خطأ: $e'};
+      return {
+        'success': false,
+        'message': 'حدث خطأ: $e',
+      };
     }
   }
 
-  // تسجيل الخروج
-  Future<void> logout() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('isLoggedIn');
-    await prefs.remove('userType');
-    await prefs.remove('uniqueId');
-    await prefs.remove('userName');
-    await prefs.remove('userEmail');
-    await prefs.remove(_currentUserKey);
-  }
-
-  // الحصول على المستخدم الحالي
-  Future<UserModel?> getCurrentUser() async {
+  /// تسجيل الدخول بالمعرف الفريد (ZA-YYYY-NNNNNN)
+  Future<Map<String, dynamic>> signInWithUniqueId({
+    required String uniqueId,
+    required String password,
+  }) async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final userJson = prefs.getString(_currentUserKey);
-      if (userJson != null) {
-        return UserModel.fromJson(json.decode(userJson));
+      // البحث عن المستخدم بالمعرف الفريد
+      QuerySnapshot querySnapshot = await _firestore
+          .collection('users')
+          .where('uniqueId', isEqualTo: uniqueId)
+          .limit(1)
+          .get();
+
+      if (querySnapshot.docs.isEmpty) {
+        return {
+          'success': false,
+          'message': 'المعرف الفريد غير موجود',
+        };
       }
+
+      DocumentSnapshot userDoc = querySnapshot.docs.first;
+      Map<String, dynamic> userData = userDoc.data() as Map<String, dynamic>;
+      String email = userData['email'];
+
+      // تسجيل الدخول بالبريد وكلمة المرور
+      return await signInWithEmail(email: email, password: password);
     } catch (e) {
-      // ignore
+      return {
+        'success': false,
+        'message': 'حدث خطأ: $e',
+      };
     }
-    return null;
   }
 
-  // الحصول على جميع المستخدمين
-  Future<List<UserModel>> _getAllUsers() async {
+  /// إرسال بريد إعادة تعيين كلمة المرور
+  Future<Map<String, dynamic>> resetPassword({
+    required String email,
+  }) async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final usersJson = prefs.getString(_usersKey);
-      if (usersJson != null) {
-        final List<dynamic> decoded = json.decode(usersJson);
-        return decoded.map((u) => UserModel.fromJson(u)).toList();
-      }
+      await _auth.sendPasswordResetEmail(email: email);
+      return {
+        'success': true,
+        'message': 'تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني',
+      };
+    } on FirebaseAuthException catch (e) {
+      String message = _getArabicErrorMessage(e.code);
+      return {
+        'success': false,
+        'message': message,
+      };
     } catch (e) {
-      // ignore
+      return {
+        'success': false,
+        'message': 'حدث خطأ: $e',
+      };
     }
-    return [];
   }
 
-  // حفظ قائمة المستخدمين
-  Future<void> _saveUsers(List<UserModel> users) async {
+  /// تسجيل الخروج
+  Future<void> signOut() async {
+    await _auth.signOut();
+    
+    // حذف البيانات المحلية
     final prefs = await SharedPreferences.getInstance();
-    final usersJson = json.encode(users.map((u) => u.toJson()).toList());
-    await prefs.setString(_usersKey, usersJson);
+    await prefs.clear();
   }
 
-  // إنشاء حساب مدير افتراضي
-  Future<void> createDefaultAdmin() async {
-    final users = await _getAllUsers();
-    if (users.any((u) => u.userType == 'admin')) {
-      return; // يوجد مدير بالفعل
-    }
-
-    final admin = UserModel(
-      uniqueId: 'ZA-A-2025-000001',
-      name: 'المدير',
-      email: 'admin@zahratamal.sd',
-      phone: '0123456789',
-      userType: 'admin',
-      createdAt: DateTime.now(),
-    );
-
-    users.add(admin);
-    await _saveUsers(users);
-
+  /// حفظ بيانات المستخدم محلياً
+  Future<void> _saveUserDataLocally(
+    String uid,
+    String email,
+    String displayName,
+    String phone,
+    String userType,
+    String uniqueId,
+  ) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('password_${admin.uniqueId}', 'admin123');
+    await prefs.setBool('isLoggedIn', true);
+    await prefs.setString('userId', uid);
+    await prefs.setString('userEmail', email);
+    await prefs.setString('userName', displayName);
+    await prefs.setString('userPhone', phone);
+    await prefs.setString('userType', userType);
+    await prefs.setString('userUniqueId', uniqueId);
+  }
+
+  /// ترجمة رسائل الخطأ من Firebase إلى العربية
+  String _getArabicErrorMessage(String errorCode) {
+    switch (errorCode) {
+      case 'weak-password':
+        return 'كلمة المرور ضعيفة جداً';
+      case 'email-already-in-use':
+        return 'البريد الإلكتروني مستخدم بالفعل';
+      case 'invalid-email':
+        return 'البريد الإلكتروني غير صحيح';
+      case 'user-not-found':
+        return 'المستخدم غير موجود';
+      case 'wrong-password':
+        return 'كلمة المرور غير صحيحة';
+      case 'user-disabled':
+        return 'تم تعطيل هذا الحساب';
+      case 'too-many-requests':
+        return 'محاولات كثيرة جداً، يرجى المحاولة لاحقاً';
+      case 'operation-not-allowed':
+        return 'العملية غير مسموح بها';
+      case 'network-request-failed':
+        return 'خطأ في الاتصال بالإنترنت';
+      default:
+        return 'حدث خطأ: $errorCode';
+    }
   }
 }
