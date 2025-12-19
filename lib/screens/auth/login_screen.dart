@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../services/auth_service.dart';
+import '../../services/auth_service_firebase.dart';
 import '../../services/unique_id_service.dart';
 
 /// شاشة تسجيل الدخول الجديدة مع Firebase Authentication
@@ -14,7 +14,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _identifierController = TextEditingController();
   final _passwordController = TextEditingController();
-  final AuthService _authService = AuthService();
+  final AuthServiceFirebase _authService = AuthServiceFirebase();
   
   bool _isLoading = false;
   bool _obscurePassword = true;

@@ -2,16 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 import 'providers/cart_provider.dart';
 import 'screens/home_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/signup_screen.dart';
 import 'screens/auth/forgot_password_screen.dart';
+import 'screens/auth/admin_login_screen.dart';
 import 'screens/cart_screen.dart';
 import 'screens/admin/admin_dashboard.dart';
+import 'screens/admin/admin_dashboard_fixed.dart';
 import 'screens/admin/manage_merchants_screen.dart';
 import 'screens/admin/manage_buyers_screen.dart';
 import 'screens/admin/manage_delivery_offices_screen.dart';
+import 'screens/chat/chats_list_screen.dart';
 import 'screens/merchant/merchant_dashboard.dart';
 import 'screens/merchant/merchant_profile_screen.dart';
 import 'screens/merchant/payment_methods_screen.dart';
@@ -46,17 +50,12 @@ void main() async {
   // تهيئة Firebase
   try {
     await Firebase.initializeApp(
-      options: const FirebaseOptions(
-        apiKey: "AIzaSyDummy-Key-For-Development",
-        appId: "1:000000000000:web:0000000000000000000000",
-        messagingSenderId: "000000000000",
-        projectId: "zahrat-amal-demo",
-        storageBucket: "zahrat-amal-demo.appspot.com",
-      ),
+      options: DefaultFirebaseOptions.currentPlatform,
     );
+    debugPrint('✅ Firebase تم تهيئته بنجاح');
   } catch (e) {
-    // في حال فشل Firebase، سيعمل التطبيق بدون Firebase
-    debugPrint('Firebase initialization failed: $e');
+    debugPrint('❌ فشل في تهيئة Firebase: $e');
+    debugPrint('⚠️ التطبيق سيعمل بالنظام المحلي فقط');
   }
   
   runApp(const MyApp());
@@ -137,9 +136,12 @@ class MyApp extends StatelessWidget {
           '/forgot-password': (context) => const ForgotPasswordScreen(),
           '/cart': (context) => const CartScreen(),
 
+          // Admin Secret Login
+          '/admin-login': (context) => const AdminLoginScreen(),
           
           // Admin Routes
           '/admin': (context) => const AdminDashboard(),
+          '/admin-dashboard': (context) => const AdminDashboardFixed(),
           '/admin/merchants': (context) => const ManageMerchantsScreen(),
           '/admin/buyers': (context) => const ManageBuyersScreen(),
           '/admin/delivery': (context) => const ManageDeliveryOfficesScreen(),
@@ -161,6 +163,9 @@ class MyApp extends StatelessWidget {
           // Merchant Routes (Extended)
           '/merchant/orders': (context) => const MerchantOrdersScreen(),
           '/merchant/analytics': (context) => const MerchantAnalyticsScreen(),
+          
+          // Chat Routes
+          '/chats': (context) => const ChatsListScreen(),
           
           // Delivery Routes
           '/delivery/dashboard': (context) => const DeliveryDashboard(),

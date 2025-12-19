@@ -179,6 +179,12 @@ class _AppDrawerState extends State<AppDrawer> {
         Colors.teal,
         () => Navigator.pushNamed(context, '/buyer/addresses'),
       ),
+      _buildMenuItem(
+        'المحادثات',
+        Icons.chat,
+        Colors.indigo,
+        () => Navigator.pushNamed(context, '/chats'),
+      ),
       const Divider(),
       _buildMenuSection('أخرى', Icons.more_horiz),
       _buildMenuItem(

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../services/auth_service.dart';
+import '../../services/auth_service_firebase.dart';
 
 /// شاشة تسجيل مستخدم جديد
 class SignUpScreen extends StatefulWidget {
@@ -17,7 +17,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   
-  final AuthService _authService = AuthService();
+  final AuthServiceFirebase _authService = AuthServiceFirebase();
   
   String _selectedUserType = 'buyer';
   bool _isLoading = false;

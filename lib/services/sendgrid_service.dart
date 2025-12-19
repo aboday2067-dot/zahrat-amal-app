@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:flutter/foundation.dart';
 
 /// خدمة SendGrid لإرسال البريد الإلكتروني
 /// 
@@ -31,7 +32,7 @@ class SendGridService {
   }) async {
     // التحقق من وجود API Key
     if (_apiKey == 'YOUR_SENDGRID_API_KEY_HERE') {
-      print('⚠️ تحذير: يرجى تعيين SendGrid API Key');
+      debugPrint('⚠️ تحذير: يرجى تعيين SendGrid API Key');
       return false;
     }
 
@@ -70,15 +71,15 @@ class SendGridService {
       );
 
       if (response.statusCode == 202) {
-        print('✅ تم إرسال البريد الإلكتروني إلى: $toEmail');
+        debugPrint('✅ تم إرسال البريد الإلكتروني إلى: $toEmail');
         return true;
       } else {
-        print('❌ خطأ SendGrid: ${response.statusCode}');
-        print('التفاصيل: ${response.body}');
+        debugPrint('❌ خطأ SendGrid: ${response.statusCode}');
+        debugPrint('التفاصيل: ${response.body}');
         return false;
       }
     } catch (e) {
-      print('❌ استثناء SendGrid: $e');
+      debugPrint('❌ استثناء SendGrid: $e');
       return false;
     }
   }
@@ -94,7 +95,7 @@ class SendGridService {
     required Map<String, dynamic> dynamicData,
   }) async {
     if (_apiKey == 'YOUR_SENDGRID_API_KEY_HERE') {
-      print('⚠️ تحذير: يرجى تعيين SendGrid API Key');
+      debugPrint('⚠️ تحذير: يرجى تعيين SendGrid API Key');
       return false;
     }
 
@@ -123,14 +124,14 @@ class SendGridService {
       );
 
       if (response.statusCode == 202) {
-        print('✅ تم إرسال البريد من القالب إلى: $toEmail');
+        debugPrint('✅ تم إرسال البريد من القالب إلى: $toEmail');
         return true;
       } else {
-        print('❌ خطأ في القالب: ${response.statusCode}');
+        debugPrint('❌ خطأ في القالب: ${response.statusCode}');
         return false;
       }
     } catch (e) {
-      print('❌ استثناء القالب: $e');
+      debugPrint('❌ استثناء القالب: $e');
       return false;
     }
   }
@@ -146,7 +147,7 @@ class SendGridService {
     required String htmlContent,
   }) async {
     if (_apiKey == 'YOUR_SENDGRID_API_KEY_HERE') {
-      print('⚠️ تحذير: يرجى تعيين SendGrid API Key');
+      debugPrint('⚠️ تحذير: يرجى تعيين SendGrid API Key');
       return false;
     }
 
@@ -180,14 +181,14 @@ class SendGridService {
       );
 
       if (response.statusCode == 202) {
-        print('✅ تم إرسال ${toEmails.length} بريد إلكتروني');
+        debugPrint('✅ تم إرسال ${toEmails.length} بريد إلكتروني');
         return true;
       } else {
-        print('❌ خطأ في الإرسال الجماعي: ${response.statusCode}');
+        debugPrint('❌ خطأ في الإرسال الجماعي: ${response.statusCode}');
         return false;
       }
     } catch (e) {
-      print('❌ استثناء الإرسال الجماعي: $e');
+      debugPrint('❌ استثناء الإرسال الجماعي: $e');
       return false;
     }
   }
@@ -209,7 +210,7 @@ class SendGridService {
     String attachmentType = 'application/pdf',
   }) async {
     if (_apiKey == 'YOUR_SENDGRID_API_KEY_HERE') {
-      print('⚠️ تحذير: يرجى تعيين SendGrid API Key');
+      debugPrint('⚠️ تحذير: يرجى تعيين SendGrid API Key');
       return false;
     }
 
@@ -251,14 +252,14 @@ class SendGridService {
       );
 
       if (response.statusCode == 202) {
-        print('✅ تم إرسال البريد مع المرفق إلى: $toEmail');
+        debugPrint('✅ تم إرسال البريد مع المرفق إلى: $toEmail');
         return true;
       } else {
-        print('❌ خطأ في إرسال المرفق: ${response.statusCode}');
+        debugPrint('❌ خطأ في إرسال المرفق: ${response.statusCode}');
         return false;
       }
     } catch (e) {
-      print('❌ استثناء المرفق: $e');
+      debugPrint('❌ استثناء المرفق: $e');
       return false;
     }
   }

@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'dart:convert';
-import 'package:flutter/services.dart' show rootBundle;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class BuyerProfileScreen extends StatefulWidget {
@@ -11,235 +9,522 @@ class BuyerProfileScreen extends StatefulWidget {
 }
 
 class _BuyerProfileScreenState extends State<BuyerProfileScreen> {
-  Map<String, dynamic>? _buyerData;
-  List<Map<String, dynamic>> _orders = [];
-  List<Map<String, dynamic>> _favoriteProducts = [];
+  String _userName = '';
+  String _userEmail = '';
+  String _userPhone = '';
+  String _uniqueId = '';
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadBuyerData();
+    _loadUserData();
   }
 
-  Future<void> _loadBuyerData() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final userEmail = prefs.getString('userEmail') ?? '';
-
-      // تحميل بيانات المشتري
-      final buyersJson = await rootBundle.loadString('assets/data/buyers.json');
-      final List<dynamic> buyers = json.decode(buyersJson);
-      final buyer = buyers.firstWhere(
-        (b) => b['email'] == userEmail,
-        orElse: () => buyers.first,
-      );
-
-      // تحميل الطلبات
-      final ordersJson = await rootBundle.loadString('assets/data/orders.json');
-      final List<dynamic> allOrders = json.decode(ordersJson);
-      final buyerOrders = allOrders
-          .where((o) => o['buyerId'] == buyer['id'])
-          .toList();
-
-      // تحميل المنتجات المفضلة
-      final productsJson = await rootBundle.loadString('assets/data/products.json');
-      final List<dynamic> products = json.decode(productsJson);
-      final favorites = products
-          .where((p) => (buyer['favoriteProducts'] as List).contains(p['id']))
-          .toList();
-
-      setState(() {
-        _buyerData = buyer;
-        _orders = buyerOrders.cast<Map<String, dynamic>>();
-        _favoriteProducts = favorites.cast<Map<String, dynamic>>();
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() => _isLoading = false);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('خطأ في تحميل البيانات: $e')),
-        );
-      }
-    }
+  Future<void> _loadUserData() async {
+    final prefs = await SharedPreferences.getInstance();
+    
+    setState(() {
+      _userName = prefs.getString('userName') ?? 'مستخدم';
+      _userEmail = prefs.getString('userEmail') ?? '';
+      _userPhone = prefs.getString('userPhone') ?? '';
+      _uniqueId = prefs.getString('userUniqueId') ?? '';
+      _isLoading = false;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.grey[100],
-      appBar: AppBar(
-        title: const Text('حسابي'),
-        backgroundColor: Colors.green,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.settings),
-            onPressed: () {
-              // TODO: فتح الإعدادات
-            },
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Scaffold(
+        backgroundColor: Colors.grey[100],
+        appBar: AppBar(
+          backgroundColor: Colors.teal,
+          title: const Text(
+            'الملف الشخصي',
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
           ),
-        ],
-      ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator(
-              onRefresh: _loadBuyerData,
-              child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.all(16),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Colors.white),
+            onPressed: () => Navigator.pop(context),
+          ),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.settings, color: Colors.white),
+              onPressed: () {
+                Navigator.pushNamed(context, '/settings');
+              },
+            ),
+          ],
+        ),
+        body: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : SingleChildScrollView(
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _buildProfileHeader(),
-                    const SizedBox(height: 20),
-                    _buildStatsCards(),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 16),
+                    _buildMembershipCard(),
+                    const SizedBox(height: 16),
+                    _buildPersonalInfo(),
+                    const SizedBox(height: 16),
                     _buildQuickActions(),
-                    const SizedBox(height: 20),
-                    _buildRecentOrders(),
-                    const SizedBox(height: 20),
-                    _buildFavoriteProducts(),
-                    const SizedBox(height: 20),
-                    _buildAddressesSection(),
+                    const SizedBox(height: 16),
+                    _buildStatistics(),
+                    const SizedBox(height: 24),
                   ],
                 ),
               ),
-            ),
+      ),
     );
   }
 
   Widget _buildProfileHeader() {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Colors.green, Colors.lightGreenAccent],
+        gradient: LinearGradient(
+          colors: [Colors.teal[400]!, Colors.teal[600]!],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.green.withValues(alpha: 0.3),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+      ),
+      child: Column(
+        children: [
+          Stack(
+            children: [
+              CircleAvatar(
+                radius: 50,
+                backgroundColor: Colors.white,
+                child: Text(
+                  _userName.isNotEmpty ? _userName[0].toUpperCase() : 'م',
+                  style: TextStyle(
+                    fontSize: 40,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.teal[600],
+                  ),
+                ),
+              ),
+              Positioned(
+                bottom: 0,
+                right: 0,
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.teal, width: 2),
+                  ),
+                  child: Icon(
+                    Icons.camera_alt,
+                    size: 20,
+                    color: Colors.teal[600],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            _userName,
+            style: const TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            _userEmail,
+            style: const TextStyle(
+              fontSize: 14,
+              color: Colors.white70,
+            ),
           ),
         ],
       ),
-      child: Row(
-        children: [
-          CircleAvatar(
-            radius: 40,
-            backgroundColor: Colors.white,
-            child: Text(
-              _buyerData!['name'].substring(0, 1),
-              style: const TextStyle(
-                fontSize: 32,
-                fontWeight: FontWeight.bold,
-                color: Colors.green,
-              ),
+    );
+  }
+
+  Widget _buildMembershipCard() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Card(
+        elevation: 4,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            gradient: LinearGradient(
+              colors: [Colors.purple[400]!, Colors.purple[600]!],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
           ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.card_membership,
+                    color: Colors.white,
+                    size: 28,
+                  ),
+                  const SizedBox(width: 8),
+                  const Text(
+                    'بطاقة العضوية',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'رقم العضوية:',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.white70,
+                      ),
+                    ),
+                    Text(
+                      _uniqueId,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'الاسم الكامل',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.white70,
+                        ),
+                      ),
+                      Text(
+                        _userName,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.green[400],
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      children: const [
+                        Icon(Icons.check_circle, size: 14, color: Colors.white),
+                        SizedBox(width: 4),
+                        Text(
+                          'نشط',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPersonalInfo() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Card(
+        elevation: 2,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'المعلومات الشخصية',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  TextButton.icon(
+                    onPressed: () {
+                      _showEditProfileDialog();
+                    },
+                    icon: Icon(Icons.edit, size: 16, color: Colors.teal[600]),
+                    label: Text(
+                      'تعديل',
+                      style: TextStyle(color: Colors.teal[600]),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              _buildInfoRow(Icons.person, 'الاسم الكامل', _userName),
+              _buildDivider(),
+              _buildInfoRow(Icons.email, 'البريد الإلكتروني', _userEmail),
+              _buildDivider(),
+              _buildInfoRow(Icons.phone, 'رقم الهاتف', _userPhone),
+              _buildDivider(),
+              _buildInfoRow(Icons.fingerprint, 'المعرف الفريد', _uniqueId),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(IconData icon, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: Row(
+        children: [
+          Icon(icon, color: Colors.teal[600], size: 24),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  _buyerData!['name'],
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
+                  label,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey[600],
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  _buyerData!['email'],
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.9),
-                    fontSize: 14,
+                  value.isNotEmpty ? value : 'غير محدد',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
                   ),
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    Icon(Icons.phone, color: Colors.white, size: 16),
-                    const SizedBox(width: 4),
-                    Text(
-                      _buyerData!['phone'],
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.9),
-                        fontSize: 14,
-                      ),
-                    ),
-                  ],
                 ),
               ],
             ),
           ),
-          IconButton(
-            icon: const Icon(Icons.edit, color: Colors.white),
-            onPressed: () {
-              // TODO: تعديل الملف الشخصي
-            },
-          ),
         ],
       ),
     );
   }
 
-  Widget _buildStatsCards() {
-    return Row(
-      children: [
-        Expanded(
-          child: _buildStatCard(
-            'الطلبات',
-            _buyerData!['totalOrders'].toString(),
-            Icons.shopping_bag,
-            Colors.blue,
+  Widget _buildDivider() {
+    return Divider(height: 1, color: Colors.grey[300]);
+  }
+
+  Widget _buildQuickActions() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Card(
+        elevation: 2,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'إجراءات سريعة',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildQuickActionButton(
+                      icon: Icons.shopping_bag,
+                      label: 'طلباتي',
+                      color: Colors.blue,
+                      onTap: () => Navigator.pushNamed(context, '/my-orders'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildQuickActionButton(
+                      icon: Icons.favorite,
+                      label: 'المفضلة',
+                      color: Colors.red,
+                      onTap: () => Navigator.pushNamed(context, '/favorites'),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildQuickActionButton(
+                      icon: Icons.location_on,
+                      label: 'العناوين',
+                      color: Colors.orange,
+                      onTap: () => Navigator.pushNamed(context, '/addresses'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildQuickActionButton(
+                      icon: Icons.help,
+                      label: 'المساعدة',
+                      color: Colors.purple,
+                      onTap: () => Navigator.pushNamed(context, '/help'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _buildStatCard(
-            'الإنفاق',
-            '${(_buyerData!['totalSpent'] / 1000).toStringAsFixed(1)}K',
-            Icons.attach_money,
-            Colors.orange,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _buildStatCard(
-            'المفضلة',
-            _favoriteProducts.length.toString(),
-            Icons.favorite,
-            Colors.red,
-          ),
-        ),
-      ],
+      ),
     );
   }
 
-  Widget _buildStatCard(String label, String value, IconData icon, Color color) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+  Widget _buildQuickActionButton({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, color: color, size: 32),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: color,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatistics() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Card(
+        elevation: 2,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'الإحصائيات',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildStatCard(
+                      icon: Icons.shopping_cart,
+                      label: 'الطلبات',
+                      value: '12',
+                      color: Colors.blue,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildStatCard(
+                      icon: Icons.favorite,
+                      label: 'المفضلة',
+                      value: '8',
+                      color: Colors.red,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildStatCard(
+                      icon: Icons.star,
+                      label: 'التقييم',
+                      value: '4.8',
+                      color: Colors.amber,
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
-        ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatCard({
+    required IconData icon,
+    required String label,
+    required String value,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
         children: [
-          Icon(icon, color: color, size: 32),
+          Icon(icon, color: color, size: 28),
           const SizedBox(height: 8),
           Text(
             value,
@@ -251,467 +536,82 @@ class _BuyerProfileScreenState extends State<BuyerProfileScreen> {
           ),
           Text(
             label,
-            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.grey[600],
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildQuickActions() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'الإجراءات السريعة',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 12),
-        GridView.count(
-          crossAxisCount: 3,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          crossAxisSpacing: 12,
-          mainAxisSpacing: 12,
-          childAspectRatio: 1,
-          children: [
-            _buildActionCard('طلباتي', Icons.list_alt, Colors.blue, () {
-              // TODO: عرض الطلبات
-            }),
-            _buildActionCard('المفضلة', Icons.favorite, Colors.red, () {
-              // TODO: عرض المفضلة
-            }),
-            _buildActionCard('العناوين', Icons.location_on, Colors.orange, () {
-              // TODO: إدارة العناوين
-            }),
-            _buildActionCard('السلة', Icons.shopping_cart, Colors.green, () {
-              // TODO: فتح السلة
-            }),
-            _buildActionCard('الإشعارات', Icons.notifications, Colors.purple, () {
-              // TODO: عرض الإشعارات
-            }),
-            _buildActionCard('المساعدة', Icons.help, Colors.teal, () {
-              // TODO: المساعدة
-            }),
-          ],
-        ),
-      ],
-    );
-  }
+  void _showEditProfileDialog() {
+    final nameController = TextEditingController(text: _userName);
+    final phoneController = TextEditingController(text: _userPhone);
 
-  Widget _buildActionCard(String label, IconData icon, Color color, VoidCallback onTap) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withValues(alpha: 0.1),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: color, size: 32),
-            const SizedBox(height: 8),
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildRecentOrders() {
-    final recentOrders = _orders.take(3).toList();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text(
-              'الطلبات الأخيرة',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            TextButton(
-              onPressed: () {
-                // TODO: عرض جميع الطلبات
-              },
-              child: const Text('عرض الكل'),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        if (recentOrders.isEmpty)
-          Container(
-            padding: const EdgeInsets.all(32),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Center(
-              child: Column(
-                children: [
-                  Icon(Icons.shopping_bag_outlined, size: 48, color: Colors.grey[400]),
-                  const SizedBox(height: 8),
-                  Text(
-                    'لا توجد طلبات بعد',
-                    style: TextStyle(color: Colors.grey[600]),
+    showDialog(
+      context: context,
+      builder: (context) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: AlertDialog(
+          title: const Text('تعديل الملف الشخصي'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nameController,
+                  decoration: const InputDecoration(
+                    labelText: 'الاسم الكامل',
+                    border: OutlineInputBorder(),
                   ),
-                ],
-              ),
-            ),
-          )
-        else
-          ...recentOrders.map((order) => _buildOrderCard(order)),
-      ],
-    );
-  }
-
-  Widget _buildOrderCard(Map<String, dynamic> order) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: _getStatusColor(order['status']).withValues(alpha: 0.2),
-          child: Icon(
-            _getStatusIcon(order['status']),
-            color: _getStatusColor(order['status']),
-          ),
-        ),
-        title: Text(
-          'طلب #${order['id'].substring(0, 8)}',
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-        subtitle: Text(
-          '${order['merchantName']} • ${_getStatusLabel(order['status'])}',
-          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-        ),
-        trailing: Text(
-          '${order['totalAmount'] + order['deliveryFee']} SDG',
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 14,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFavoriteProducts() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text(
-              'المنتجات المفضلة',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            TextButton(
-              onPressed: () {
-                // TODO: عرض جميع المفضلات
-              },
-              child: const Text('عرض الكل'),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        if (_favoriteProducts.isEmpty)
-          Container(
-            padding: const EdgeInsets.all(32),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Center(
-              child: Column(
-                children: [
-                  Icon(Icons.favorite_border, size: 48, color: Colors.grey[400]),
-                  const SizedBox(height: 8),
-                  Text(
-                    'لا توجد منتجات مفضلة',
-                    style: TextStyle(color: Colors.grey[600]),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: phoneController,
+                  keyboardType: TextInputType.phone,
+                  decoration: const InputDecoration(
+                    labelText: 'رقم الهاتف',
+                    border: OutlineInputBorder(),
                   ),
-                ],
-              ),
-            ),
-          )
-        else
-          SizedBox(
-            height: 150,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: _favoriteProducts.length,
-              itemBuilder: (context, index) {
-                return _buildFavoriteProductCard(_favoriteProducts[index]);
-              },
+                ),
+              ],
             ),
           ),
-      ],
-    );
-  }
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('إلغاء'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final prefs = await SharedPreferences.getInstance();
+                await prefs.setString('userName', nameController.text);
+                await prefs.setString('userPhone', phoneController.text);
+                
+                // تحديث بيانات المستخدم في قاعدة البيانات المحلية
+                final userId = prefs.getString('userId');
+                if (userId != null) {
+                  await prefs.setString('${userId}_displayName', nameController.text);
+                  await prefs.setString('${userId}_phone', phoneController.text);
+                }
 
-  Widget _buildFavoriteProductCard(Map<String, dynamic> product) {
-    return Container(
-      width: 120,
-      margin: const EdgeInsets.only(left: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ClipRRect(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-            child: Image.network(
-              product['imageUrl'],
-              height: 80,
-              width: double.infinity,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) {
-                return Container(
-                  height: 80,
-                  color: Colors.grey[300],
-                  child: const Icon(Icons.image),
+                setState(() {
+                  _userName = nameController.text;
+                  _userPhone = phoneController.text;
+                });
+
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('تم تحديث البيانات بنجاح')),
                 );
               },
+              child: const Text('حفظ'),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(8),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  product['name'],
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '${product['price']} SDG',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Colors.green,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
-  }
-
-  Widget _buildAddressesSection() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'عناويني',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              TextButton.icon(
-                onPressed: () {
-                  // TODO: إضافة عنوان جديد
-                },
-                icon: const Icon(Icons.add, size: 18),
-                label: const Text('إضافة'),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          _buildAddressCard(
-            'المنزل',
-            _buyerData!['address'],
-            '${_buyerData!['city']} - ${_buyerData!['state']}',
-            true,
-          ),
-          const SizedBox(height: 8),
-          _buildAddressCard(
-            'العمل',
-            'شارع الجامعة - عمارة 5',
-            'الخرطوم - السودان',
-            false,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAddressCard(String title, String address, String location, bool isDefault) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey[300]!),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.location_on, color: Colors.green),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                      ),
-                    ),
-                    if (isDefault) ...[
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: Colors.green.withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: const Text(
-                          'افتراضي',
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: Colors.green,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  address,
-                  style: TextStyle(fontSize: 12, color: Colors.grey[700]),
-                ),
-                Text(
-                  location,
-                  style: TextStyle(fontSize: 11, color: Colors.grey[500]),
-                ),
-              ],
-            ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.edit, size: 20),
-            onPressed: () {
-              // TODO: تعديل العنوان
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  Color _getStatusColor(String status) {
-    switch (status) {
-      case 'delivered':
-        return Colors.green;
-      case 'shipped':
-        return Colors.blue;
-      case 'confirmed':
-        return Colors.teal;
-      case 'pending':
-        return Colors.orange;
-      case 'cancelled':
-        return Colors.red;
-      default:
-        return Colors.grey;
-    }
-  }
-
-  IconData _getStatusIcon(String status) {
-    switch (status) {
-      case 'delivered':
-        return Icons.check_circle;
-      case 'shipped':
-        return Icons.local_shipping;
-      case 'confirmed':
-        return Icons.verified;
-      case 'pending':
-        return Icons.schedule;
-      case 'cancelled':
-        return Icons.cancel;
-      default:
-        return Icons.help_outline;
-    }
-  }
-
-  String _getStatusLabel(String status) {
-    switch (status) {
-      case 'delivered':
-        return 'مكتمل';
-      case 'shipped':
-        return 'جاري التوصيل';
-      case 'confirmed':
-        return 'مؤكد';
-      case 'pending':
-        return 'قيد الانتظار';
-      case 'cancelled':
-        return 'ملغي';
-      default:
-        return status;
-    }
   }
 }

@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'dart:convert';
-import 'package:flutter/services.dart' show rootBundle;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class DeliveryProfileScreen extends StatefulWidget {
@@ -11,699 +9,510 @@ class DeliveryProfileScreen extends StatefulWidget {
 }
 
 class _DeliveryProfileScreenState extends State<DeliveryProfileScreen> {
-  Map<String, dynamic>? _officeData;
-  List<Map<String, dynamic>> _deliveries = [];
+  String _userName = '';
+  String _userEmail = '';
+  String _userPhone = '';
+  String _uniqueId = '';
+  String _officeName = '';
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadOfficeData();
+    _loadUserData();
   }
 
-  Future<void> _loadOfficeData() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final userEmail = prefs.getString('userEmail') ?? '';
-
-      // تحميل بيانات مكتب التوصيل
-      final officesJson = await rootBundle.loadString('assets/data/delivery_offices.json');
-      final List<dynamic> offices = json.decode(officesJson);
-      final office = offices.firstWhere(
-        (o) => o['email'] == userEmail,
-        orElse: () => offices.first,
-      );
-
-      // تحميل التوصيلات
-      final ordersJson = await rootBundle.loadString('assets/data/orders.json');
-      final List<dynamic> allOrders = json.decode(ordersJson);
-      final officeDeliveries = allOrders
-          .where((o) => o['deliveryOfficeId'] == office['id'])
-          .toList();
-
-      setState(() {
-        _officeData = office;
-        _deliveries = officeDeliveries.cast<Map<String, dynamic>>();
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() => _isLoading = false);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('خطأ في تحميل البيانات: $e')),
-        );
-      }
-    }
+  Future<void> _loadUserData() async {
+    final prefs = await SharedPreferences.getInstance();
+    
+    setState(() {
+      _userName = prefs.getString('userName') ?? 'مكتب التوصيل';
+      _userEmail = prefs.getString('userEmail') ?? '';
+      _userPhone = prefs.getString('userPhone') ?? '';
+      _uniqueId = prefs.getString('userUniqueId') ?? '';
+      _officeName = prefs.getString('officeName') ?? _userName;
+      _isLoading = false;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.grey[100],
-      appBar: AppBar(
-        title: const Text('ملف المكتب'),
-        backgroundColor: Colors.orange,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.settings),
-            onPressed: () {
-              // TODO: الإعدادات
-            },
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Scaffold(
+        backgroundColor: Colors.grey[100],
+        appBar: AppBar(
+          backgroundColor: Colors.green[700],
+          title: const Text(
+            'حساب مكتب التوصيل',
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
           ),
-        ],
-      ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator(
-              onRefresh: _loadOfficeData,
-              child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.all(16),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Colors.white),
+            onPressed: () => Navigator.pop(context),
+          ),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.settings, color: Colors.white),
+              onPressed: () => Navigator.pushNamed(context, '/settings'),
+            ),
+          ],
+        ),
+        body: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : SingleChildScrollView(
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _buildProfileHeader(),
-                    const SizedBox(height: 20),
-                    _buildStatsCards(),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 16),
+                    _buildMembershipCard(),
+                    const SizedBox(height: 16),
+                    _buildOfficeInfo(),
+                    const SizedBox(height: 16),
                     _buildQuickActions(),
-                    const SizedBox(height: 20),
-                    _buildAgentsSection(),
-                    const SizedBox(height: 20),
-                    _buildCoverageAreas(),
-                    const SizedBox(height: 20),
-                    _buildRecentDeliveries(),
+                    const SizedBox(height: 16),
+                    _buildStatistics(),
+                    const SizedBox(height: 24),
                   ],
                 ),
               ),
-            ),
+      ),
     );
   }
 
   Widget _buildProfileHeader() {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Colors.orange, Colors.deepOrange],
+        gradient: LinearGradient(
+          colors: [Colors.green[400]!, Colors.green[700]!],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.orange.withValues(alpha: 0.3),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
       ),
       child: Column(
         children: [
-          Row(
+          Stack(
             children: [
               CircleAvatar(
-                radius: 40,
+                radius: 50,
                 backgroundColor: Colors.white,
-                child: Icon(
-                  Icons.local_shipping,
-                  size: 40,
-                  color: Colors.orange,
-                ),
+                child: Icon(Icons.local_shipping, size: 50, color: Colors.green[700]),
               ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      _officeData!['officeName'],
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      _officeData!['managerName'],
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.9),
-                        fontSize: 16,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Icon(Icons.star, color: Colors.amber, size: 20),
-                        const SizedBox(width: 4),
-                        Text(
-                          _officeData!['rating'].toString(),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        if (_officeData!['isVerified'] == true)
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.2),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(Icons.verified, size: 14, color: Colors.white),
-                                const SizedBox(width: 4),
-                                Text(
-                                  'موثق',
-                                  style: TextStyle(color: Colors.white, fontSize: 12),
-                                ),
-                              ],
-                            ),
-                          ),
-                      ],
-                    ),
-                  ],
+              Positioned(
+                bottom: 0,
+                right: 0,
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.green, width: 2),
+                  ),
+                  child: Icon(Icons.camera_alt, size: 20, color: Colors.green[700]),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.location_on, color: Colors.white, size: 20),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    '${_officeData!['address']}, ${_officeData!['city']}',
-                    style: TextStyle(color: Colors.white, fontSize: 14),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatsCards() {
-    return Row(
-      children: [
-        Expanded(
-          child: _buildStatCard(
-            'التوصيلات',
-            _officeData!['totalDeliveries'].toString(),
-            Icons.local_shipping,
-            Colors.blue,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _buildStatCard(
-            'نشط',
-            _officeData!['activeDeliveries'].toString(),
-            Icons.pending_actions,
-            Colors.orange,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _buildStatCard(
-            'العمال',
-            _officeData!['totalAgents'].toString(),
-            Icons.people,
-            Colors.green,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStatCard(String label, String value, IconData icon, Color color) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Icon(icon, color: color, size: 32),
-          const SizedBox(height: 8),
           Text(
-            value,
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
-          ),
-          Text(
-            label,
-            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildQuickActions() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'الإجراءات السريعة',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 12),
-        GridView.count(
-          crossAxisCount: 3,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          crossAxisSpacing: 12,
-          mainAxisSpacing: 12,
-          childAspectRatio: 1,
-          children: [
-            _buildActionCard('التوصيلات', Icons.delivery_dining, Colors.blue),
-            _buildActionCard('العمال', Icons.people, Colors.green),
-            _buildActionCard('المناطق', Icons.map, Colors.orange),
-            _buildActionCard('الإحصائيات', Icons.bar_chart, Colors.purple),
-            _buildActionCard('الإعدادات', Icons.settings, Colors.teal),
-            _buildActionCard('التقارير', Icons.assessment, Colors.red),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildActionCard(String label, IconData icon, Color color) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, color: color, size: 32),
-          const SizedBox(height: 8),
-          Text(
-            label,
+            _officeName,
             style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
             ),
-            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            _userName,
+            style: const TextStyle(fontSize: 14, color: Colors.white70),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildAgentsSection() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+  Widget _buildMembershipCard() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Card(
+        elevation: 4,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            gradient: LinearGradient(
+              colors: [Colors.green[600]!, Colors.green[800]!],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
           ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'العمال',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              TextButton.icon(
-                onPressed: () {
-                  // TODO: إضافة عامل
-                },
-                icon: const Icon(Icons.add, size: 18),
-                label: const Text('إضافة'),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          _buildAgentCard('محمد أحمد', '0912345678', 15, 4.8, true),
-          const SizedBox(height: 8),
-          _buildAgentCard('علي حسن', '0923456789', 10, 4.5, true),
-          const SizedBox(height: 8),
-          _buildAgentCard('يوسف إبراهيم', '0934567890', 8, 4.9, false),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAgentCard(String name, String phone, int deliveries, double rating, bool isActive) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey[300]!),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        children: [
-          CircleAvatar(
-            backgroundColor: isActive ? Colors.green.withValues(alpha: 0.2) : Colors.grey[300],
-            child: Icon(
-              Icons.person,
-              color: isActive ? Colors.green : Colors.grey,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Text(
-                      name,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                      ),
+              Row(
+                children: const [
+                  Icon(Icons.verified_user, color: Colors.white, size: 28),
+                  SizedBox(width: 8),
+                  Text(
+                    'مكتب توصيل معتمد',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
                     ),
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: (isActive ? Colors.green : Colors.grey).withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        isActive ? 'نشط' : 'غير متاح',
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: isActive ? Colors.green : Colors.grey,
-                          fontWeight: FontWeight.bold,
-                        ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'رقم المكتب:',
+                      style: TextStyle(fontSize: 14, color: Colors.white70),
+                    ),
+                    Text(
+                      _uniqueId,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        letterSpacing: 1.2,
                       ),
                     ),
                   ],
                 ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOfficeInfo() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Card(
+        elevation: 2,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'معلومات المكتب',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  TextButton.icon(
+                    onPressed: _showEditProfileDialog,
+                    icon: Icon(Icons.edit, size: 16, color: Colors.green[700]),
+                    label: Text('تعديل', style: TextStyle(color: Colors.green[700])),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              _buildInfoRow(Icons.business, 'اسم المكتب', _officeName),
+              _buildDivider(),
+              _buildInfoRow(Icons.person, 'المسؤول', _userName),
+              _buildDivider(),
+              _buildInfoRow(Icons.email, 'البريد الإلكتروني', _userEmail),
+              _buildDivider(),
+              _buildInfoRow(Icons.phone, 'رقم الهاتف', _userPhone),
+              _buildDivider(),
+              _buildInfoRow(Icons.fingerprint, 'المعرف الفريد', _uniqueId),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(IconData icon, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: Row(
+        children: [
+          Icon(icon, color: Colors.green[700], size: 24),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
                 const SizedBox(height: 4),
                 Text(
-                  phone,
-                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                  value.isNotEmpty ? value : 'غير محدد',
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
                 ),
               ],
             ),
           ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDivider() {
+    return Divider(height: 1, color: Colors.grey[300]);
+  }
+
+  Widget _buildQuickActions() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Card(
+        elevation: 2,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              const Text(
+                'إدارة المكتب',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 16),
               Row(
                 children: [
-                  Icon(Icons.star, size: 14, color: Colors.amber),
-                  const SizedBox(width: 4),
-                  Text(
-                    rating.toString(),
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                  Expanded(
+                    child: _buildQuickActionButton(
+                      icon: Icons.delivery_dining,
+                      label: 'الطلبات النشطة',
+                      color: Colors.blue,
+                      onTap: () => Navigator.pushNamed(context, '/active-deliveries'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildQuickActionButton(
+                      icon: Icons.people,
+                      label: 'العمال',
+                      color: Colors.green,
+                      onTap: () => Navigator.pushNamed(context, '/delivery-agents'),
+                    ),
                   ),
                 ],
               ),
-              const SizedBox(height: 4),
-              Text(
-                '$deliveries توصيلة',
-                style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildQuickActionButton(
+                      icon: Icons.map,
+                      label: 'مناطق التغطية',
+                      color: Colors.orange,
+                      onTap: () => Navigator.pushNamed(context, '/coverage-areas'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildQuickActionButton(
+                      icon: Icons.history,
+                      label: 'السجل',
+                      color: Colors.purple,
+                      onTap: () => Navigator.pushNamed(context, '/delivery-history'),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildCoverageAreas() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'مناطق التغطية',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              TextButton.icon(
-                onPressed: () {
-                  // TODO: إضافة منطقة
-                },
-                icon: const Icon(Icons.add, size: 18),
-                label: const Text('إضافة'),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: (_officeData!['coverageAreas'] as List).map((area) {
-              return Chip(
-                label: Text(area),
-                avatar: const Icon(Icons.location_on, size: 18),
-                backgroundColor: Colors.orange.withValues(alpha: 0.1),
-                labelStyle: const TextStyle(fontSize: 12),
-              );
-            }).toList(),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Icon(Icons.attach_money, size: 20, color: Colors.green),
-              const SizedBox(width: 8),
-              Text(
-                'رسوم التوصيل: ${_officeData!['deliveryFee']} SDG',
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildRecentDeliveries() {
-    final recentDeliveries = _deliveries.take(5).toList();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  Widget _buildQuickActionButton({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
           children: [
-            const Text(
-              'التوصيلات الأخيرة',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            TextButton(
-              onPressed: () {
-                // TODO: عرض جميع التوصيلات
-              },
-              child: const Text('عرض الكل'),
+            Icon(icon, color: color, size: 32),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: color),
             ),
           ],
         ),
-        const SizedBox(height: 12),
-        if (recentDeliveries.isEmpty)
-          Container(
-            padding: const EdgeInsets.all(32),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Center(
-              child: Column(
-                children: [
-                  Icon(Icons.local_shipping_outlined, size: 48, color: Colors.grey[400]),
-                  const SizedBox(height: 8),
-                  Text(
-                    'لا توجد توصيلات',
-                    style: TextStyle(color: Colors.grey[600]),
-                  ),
-                ],
-              ),
-            ),
-          )
-        else
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: recentDeliveries.length,
-              separatorBuilder: (context, index) => const Divider(height: 1),
-              itemBuilder: (context, index) {
-                return _buildDeliveryCard(recentDeliveries[index]);
-              },
-            ),
-          ),
-      ],
+      ),
     );
   }
 
-  Widget _buildDeliveryCard(Map<String, dynamic> delivery) {
-    return ListTile(
-      leading: CircleAvatar(
-        backgroundColor: _getStatusColor(delivery['status']).withValues(alpha: 0.2),
-        child: Icon(
-          _getStatusIcon(delivery['status']),
-          color: _getStatusColor(delivery['status']),
+  Widget _buildStatistics() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Card(
+        elevation: 2,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'إحصائيات المكتب',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildStatCard(
+                      icon: Icons.local_shipping,
+                      label: 'التوصيلات',
+                      value: '342',
+                      color: Colors.blue,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildStatCard(
+                      icon: Icons.people,
+                      label: 'العمال',
+                      value: '12',
+                      color: Colors.green,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildStatCard(
+                      icon: Icons.star,
+                      label: 'التقييم',
+                      value: '4.7',
+                      color: Colors.amber,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
-      title: Text(
-        'طلب #${delivery['id'].substring(0, 8)}',
-        style: const TextStyle(fontWeight: FontWeight.bold),
+    );
+  }
+
+  Widget _buildStatCard({
+    required IconData icon,
+    required String label,
+    required String value,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
       ),
-      subtitle: Text(
-        '${delivery['buyerName']} • ${delivery['deliveryCity']}',
-        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-      ),
-      trailing: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.end,
+      child: Column(
         children: [
+          Icon(icon, color: color, size: 28),
+          const SizedBox(height: 8),
           Text(
-            '${delivery['deliveryFee']} SDG',
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 14,
-            ),
+            value,
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: color),
           ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-            decoration: BoxDecoration(
-              color: _getStatusColor(delivery['status']).withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(4),
-            ),
-            child: Text(
-              _getStatusLabel(delivery['status']),
-              style: TextStyle(
-                fontSize: 10,
-                color: _getStatusColor(delivery['status']),
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
+          Text(label, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
         ],
       ),
     );
   }
 
-  Color _getStatusColor(String status) {
-    switch (status) {
-      case 'delivered':
-        return Colors.green;
-      case 'shipped':
-        return Colors.blue;
-      case 'confirmed':
-        return Colors.teal;
-      case 'pending':
-        return Colors.orange;
-      case 'cancelled':
-        return Colors.red;
-      default:
-        return Colors.grey;
-    }
-  }
+  void _showEditProfileDialog() {
+    final officeNameController = TextEditingController(text: _officeName);
+    final nameController = TextEditingController(text: _userName);
+    final phoneController = TextEditingController(text: _userPhone);
 
-  IconData _getStatusIcon(String status) {
-    switch (status) {
-      case 'delivered':
-        return Icons.check_circle;
-      case 'shipped':
-        return Icons.local_shipping;
-      case 'confirmed':
-        return Icons.verified;
-      case 'pending':
-        return Icons.schedule;
-      case 'cancelled':
-        return Icons.cancel;
-      default:
-        return Icons.help_outline;
-    }
-  }
+    showDialog(
+      context: context,
+      builder: (context) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: AlertDialog(
+          title: const Text('تعديل معلومات المكتب'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: officeNameController,
+                  decoration: const InputDecoration(
+                    labelText: 'اسم المكتب',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: nameController,
+                  decoration: const InputDecoration(
+                    labelText: 'اسم المسؤول',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: phoneController,
+                  keyboardType: TextInputType.phone,
+                  decoration: const InputDecoration(
+                    labelText: 'رقم الهاتف',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('إلغاء'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final prefs = await SharedPreferences.getInstance();
+                await prefs.setString('officeName', officeNameController.text);
+                await prefs.setString('userName', nameController.text);
+                await prefs.setString('userPhone', phoneController.text);
 
-  String _getStatusLabel(String status) {
-    switch (status) {
-      case 'delivered':
-        return 'مكتمل';
-      case 'shipped':
-        return 'جاري التوصيل';
-      case 'confirmed':
-        return 'مؤكد';
-      case 'pending':
-        return 'قيد الانتظار';
-      case 'cancelled':
-        return 'ملغي';
-      default:
-        return status;
-    }
+                setState(() {
+                  _officeName = officeNameController.text;
+                  _userName = nameController.text;
+                  _userPhone = phoneController.text;
+                });
+
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('تم تحديث البيانات بنجاح')),
+                );
+              },
+              child: const Text('حفظ'),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

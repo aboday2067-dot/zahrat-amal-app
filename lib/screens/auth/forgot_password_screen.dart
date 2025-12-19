@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../services/auth_service.dart';
+import '../../services/auth_service_firebase.dart';
 
 /// شاشة استعادة كلمة المرور
 class ForgotPasswordScreen extends StatefulWidget {
@@ -12,7 +12,7 @@ class ForgotPasswordScreen extends StatefulWidget {
 class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
-  final AuthService _authService = AuthService();
+  final AuthServiceFirebase _authService = AuthServiceFirebase();
   
   bool _isLoading = false;
   bool _emailSent = false;
