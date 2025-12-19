@@ -3,6 +3,11 @@ const admin = require('firebase-admin');
 
 admin.initializeApp();
 
+// ===== 🤖 AI Developer Functions =====
+const aiDeveloper = require('./ai_developer');
+exports.processAIDevelopmentRequest = aiDeveloper.processAIDevelopmentRequest;
+exports.triggerAIProcessing = aiDeveloper.triggerAIProcessing;
+
 // ===== مثال 1: إرسال رسالة ترحيب عند تسجيل مستخدم جديد =====
 exports.sendWelcomeEmail = functions.auth.user().onCreate(async (user) => {
   const email = user.email;

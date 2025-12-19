@@ -405,6 +405,12 @@ class _AdminDashboardFixedState extends State<AdminDashboardFixed> {
               Colors.purple,
               () => Navigator.pushNamed(context, '/admin/reports'),
             ),
+            _buildQuickActionButton(
+              '🤖 AI Developer',
+              Icons.auto_awesome,
+              Colors.deepPurple,
+              () => Navigator.pushNamed(context, '/admin/ai-developer'),
+            ),
           ],
         ),
       ],
