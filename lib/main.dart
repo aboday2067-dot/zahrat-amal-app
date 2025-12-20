@@ -12,7 +12,6 @@ import 'screens/auth/admin_login_screen.dart';
 import 'screens/cart_screen.dart';
 import 'screens/admin/admin_dashboard.dart';
 import 'screens/admin/admin_dashboard_fixed.dart';
-import 'screens/admin/ai_developer_screen.dart';
 import 'screens/admin/manage_merchants_screen.dart';
 import 'screens/admin/manage_buyers_screen.dart';
 import 'screens/admin/manage_delivery_offices_screen.dart';
@@ -143,7 +142,6 @@ class MyApp extends StatelessWidget {
           // Admin Routes
           '/admin': (context) => const AdminDashboard(),
           '/admin-dashboard': (context) => const AdminDashboardFixed(),
-          '/admin/ai-developer': (context) => const AIDeveloperScreen(),
           '/admin/merchants': (context) => const ManageMerchantsScreen(),
           '/admin/buyers': (context) => const ManageBuyersScreen(),
           '/admin/delivery': (context) => const ManageDeliveryOfficesScreen(),
