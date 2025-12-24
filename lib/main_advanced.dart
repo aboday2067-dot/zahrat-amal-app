@@ -353,6 +353,7 @@ class _LoginScreenState extends State<LoginScreen> {
               const SizedBox(height: 24),
               TextField(
                 controller: _emailController,
+                textDirection: TextDirection.ltr,
                 keyboardType: TextInputType.emailAddress,
                 decoration: InputDecoration(
                   labelText: 'البريد الإلكتروني',
