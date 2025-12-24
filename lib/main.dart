@@ -10,7 +10,13 @@ import 'package:image_picker/image_picker.dart';
 import 'package:flutter/services.dart';
 import 'dart:io';
 import 'firebase_options.dart';
-import 'complete_profile_system.dart'; // نظام الملف الشخصي المتكامل
+import 'complete_profile_system.dart';
+import 'advanced_auth_system.dart';
+import 'user_profiles_system.dart';
+import 'local_payment_system.dart';
+import 'chat_system.dart';
+import 'receipt_upload_system.dart';
+import 'connection_checker.dart';
 
 // ============ LANGUAGE PROVIDER ============
 class LanguageProvider extends ChangeNotifier {
@@ -90,16 +96,22 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
+  debugPrint('🚀 Initializing app...');
+  
+  // 🔥 Initialize Firebase (مع معالجة أفضل للأخطاء)
+  bool firebaseInitialized = false;
   try {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
-    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-    await FirebaseMessaging.instance.requestPermission();
     debugPrint('✅ Firebase initialized successfully');
+    firebaseInitialized = true;
   } catch (e) {
     debugPrint('⚠️ Firebase initialization failed: $e');
+    debugPrint('⚠️ التطبيق سيعمل في وضع Offline');
   }
+  
+  debugPrint('🎉 App ready!');
   
   runApp(
     MultiProvider(
@@ -240,31 +252,25 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _initialize() async {
-    await Future.delayed(const Duration(seconds: 2));
-    
-    _setupFirebaseMessaging();
-    
-    final prefs = await SharedPreferences.getInstance();
-    final isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
-    final userRole = prefs.getString('userRole') ?? 'buyer';
-    
-    if (mounted) {
-      if (isLoggedIn) {
-        if (userRole == 'merchant') {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => const MerchantDashboard()),
-          );
-        } else {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => const MainScreen()),
-          );
-        }
-      } else {
+    try {
+      // انتظر ثانية واحدة فقط
+      await Future.delayed(const Duration(seconds: 1));
+      
+      if (!mounted) return;
+      
+      // الانتقال مباشرة للشاشة الرئيسية
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const MainScreen()),
+      );
+    } catch (e) {
+      debugPrint('⚠️ Initialization error: $e');
+      
+      // في حالة الخطأ، انتقل للشاشة الرئيسية
+      if (mounted) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const LoginScreen()),
+          MaterialPageRoute(builder: (context) => const MainScreen()),
         );
       }
     }
@@ -341,37 +347,82 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
-  String _userRole = 'buyer';
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
 
   Future<void> _login() async {
+    final langProvider = Provider.of<LanguageProvider>(context, listen: false);
+    
     if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('الرجاء ملء جميع الحقول')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(langProvider.translate('الرجاء ملء جميع الحقول', 'Please fill all fields')),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
       return;
     }
 
     setState(() => _isLoading = true);
-    await Future.delayed(const Duration(seconds: 1));
-
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('isLoggedIn', true);
-    await prefs.setString('userEmail', _emailController.text);
-    await prefs.setString('userName', _userRole == 'merchant' ? 'محمد التاجر' : 'أحمد المشتري');
-    await prefs.setString('userPhone', '+249912345678');
-    await prefs.setString('userId', _userRole == 'merchant' ? 'm1' : 'b1');
-    await prefs.setString('userRole', _userRole);
-
-    if (mounted) {
-      if (_userRole == 'merchant') {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const MerchantDashboard()),
-        );
-      } else {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const MainScreen()),
+    
+    try {
+      // استخدام نظام المصادقة المتقدم
+      final result = await AuthManager.login(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+      );
+      
+      if (mounted) {
+        setState(() => _isLoading = false);
+        
+        if (result['success']) {
+          final user = result['user'] as UserModel;
+          
+          // عرض رسالة نجاح
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(langProvider.translate('تم تسجيل الدخول بنجاح', 'Login successful')),
+              backgroundColor: Colors.green,
+            ),
+          );
+          
+          // الانتقال للشاشة المناسبة حسب نوع الحساب
+          if (user.role == 'merchant') {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const MerchantDashboard()),
+            );
+          } else {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const MainScreen()),
+            );
+          }
+        } else {
+          // عرض رسالة خطأ
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(result['message']),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(langProvider.translate('حدث خطأ أثناء تسجيل الدخول', 'Login error occurred')),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     }
@@ -424,29 +475,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
               const SizedBox(height: 32),
-              Row(
-                children: [
-                  Expanded(
-                    child: RadioListTile<String>(
-                      title: Text(langProvider.translate('مشتري', 'Buyer')),
-                      value: 'buyer',
-                      groupValue: _userRole,
-                      onChanged: (value) => setState(() => _userRole = value!),
-                      activeColor: const Color(0xFF6B9AC4),
-                    ),
-                  ),
-                  Expanded(
-                    child: RadioListTile<String>(
-                      title: Text(langProvider.translate('تاجر', 'Merchant')),
-                      value: 'merchant',
-                      groupValue: _userRole,
-                      onChanged: (value) => setState(() => _userRole = value!),
-                      activeColor: const Color(0xFF6B9AC4),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
               TextField(
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
@@ -487,13 +515,60 @@ class _LoginScreenState extends State<LoginScreen> {
                         width: 20,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          color: Colors.white,
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                         ),
                       )
                     : Text(
                         langProvider.translate('تسجيل الدخول', 'Login'),
-                        style: const TextStyle(fontSize: 18),
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
+              ),
+              const SizedBox(height: 16),
+              // زر التسجيل
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    langProvider.translate('ليس لديك حساب؟', 'No account?'),
+                    style: const TextStyle(fontSize: 14),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const RegisterScreen()),
+                      );
+                    },
+                    child: Text(
+                      langProvider.translate('تسجيل حساب جديد', 'Create Account'),
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF6B9AC4),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              // خيار تخطي تسجيل الدخول
+              TextButton(
+                onPressed: () {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (context) => const MainScreen()),
+                  );
+                },
+                child: Text(
+                  langProvider.translate('تخطي وتصفح التطبيق', 'Skip and browse'),
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey[600],
+                  ),
+                ),
               ),
             ],
           ),
@@ -1275,148 +1350,37 @@ class _ChatScreenState extends State<ChatScreen> {
 class PaymentScreen extends StatelessWidget {
   const PaymentScreen({super.key});
 
-  Future<void> _processPayment(BuildContext context, String method) async {
-    final cartProvider = Provider.of<CartProvider>(context, listen: false);
-    final couponProvider = Provider.of<CouponProvider>(context, listen: false);
-    final langProvider = Provider.of<LanguageProvider>(context, listen: false);
-    
-    final subtotal = cartProvider.totalAmount;
-    final discount = couponProvider.calculateDiscount(subtotal);
-    final total = subtotal - discount;
-    
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const Center(child: CircularProgressIndicator()),
-    );
-    
-    await Future.delayed(const Duration(seconds: 2));
-    
-    if (context.mounted) {
-      Navigator.pop(context);
-      
-      Provider.of<NotificationProvider>(context, listen: false).addNotification(
-        langProvider.translate('تم الدفع بنجاح', 'Payment Successful'),
-        '${langProvider.translate('تم دفع', 'Paid')} $total ${langProvider.translate('جنيه عبر', 'SDG via')} $method',
-      );
-      
-      cartProvider.clearCart();
-      couponProvider.removeCoupon();
-      
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: Text('✅ ${langProvider.translate('تم الدفع بنجاح', 'Payment Successful')}'),
-          content: Text('${langProvider.translate('تم دفع', 'Paid')} $total ${langProvider.translate('جنيه عبر', 'SDG via')} $method'),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                Navigator.pop(context);
-              },
-              child: Text(langProvider.translate('موافق', 'OK')),
-            ),
-          ],
-        ),
-      );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final cartProvider = Provider.of<CartProvider>(context);
     final couponProvider = Provider.of<CouponProvider>(context);
-    final langProvider = Provider.of<LanguageProvider>(context);
     
     final subtotal = cartProvider.totalAmount;
     final discount = couponProvider.calculateDiscount(subtotal);
     final total = subtotal - discount;
     
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(langProvider.translate('طرق الدفع', 'Payment Methods')),
-        backgroundColor: const Color(0xFF6B9AC4),
-        foregroundColor: Colors.white,
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  Text(langProvider.translate('المبلغ الإجمالي', 'Total Amount'), style: const TextStyle(fontSize: 16)),
-                  const SizedBox(height: 8),
-                  Text('${total.toInt()} ${langProvider.translate('جنيه', 'SDG')}', style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Color(0xFF6B9AC4))),
-                ],
-              ),
-            ),
+    // استخدام نظام الدفع المحلي المتقدم
+    return LocalPaymentSystem(
+      userId: 'CURRENT_USER', // يجب استبداله بمعرف المستخدم الفعلي
+      orderId: 'ORD-${DateTime.now().millisecondsSinceEpoch}',
+      totalAmount: total,
+      onPaymentComplete: (paymentData) {
+        final paymentMethod = paymentData['method'] ?? 'unknown';
+        // مسح السلة بعد الدفع
+        cartProvider.clearCart();
+        couponProvider.removeCoupon();
+        
+        // إظهار رسالة نجاح
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('تم الدفع بنجاح عبر $paymentMethod'),
+            backgroundColor: Colors.green,
           ),
-          const SizedBox(height: 24),
-          Text(langProvider.translate('اختر طريقة الدفع:', 'Choose Payment Method:'), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 16),
-          _buildPaymentOption(
-            context,
-            icon: Icons.credit_card,
-            title: langProvider.translate('بطاقة ائتمان', 'Credit Card'),
-            subtitle: 'Visa, Mastercard, Amex',
-            onTap: () => _processPayment(context, langProvider.translate('بطاقة ائتمان', 'Credit Card')),
-          ),
-          _buildPaymentOption(
-            context,
-            icon: Icons.account_balance_wallet,
-            title: langProvider.translate('فودافون كاش', 'Vodafone Cash'),
-            subtitle: langProvider.translate('محفظة إلكترونية', 'Digital Wallet'),
-            onTap: () => _processPayment(context, langProvider.translate('فودافون كاش', 'Vodafone Cash')),
-          ),
-          _buildPaymentOption(
-            context,
-            icon: Icons.money,
-            title: langProvider.translate('الدفع عند الاستلام', 'Cash on Delivery'),
-            subtitle: langProvider.translate('ادفع نقداً', 'Pay Cash'),
-            onTap: () => _processPayment(context, langProvider.translate('الدفع عند الاستلام', 'Cash on Delivery')),
-          ),
-          const SizedBox(height: 24),
-          Text(langProvider.translate('شركات الشحن المتاحة:', 'Available Shipping:'), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 12),
-          _buildShippingOption(context, 'Aramex', '50 ${langProvider.translate('جنيه', 'SDG')}', '2-3 ${langProvider.translate('أيام', 'days')}'),
-          _buildShippingOption(context, 'DHL', '80 ${langProvider.translate('جنيه', 'SDG')}', '1-2 ${langProvider.translate('أيام', 'days')}'),
-        ],
-      ),
-    );
-  }
-  
-  Widget _buildPaymentOption(BuildContext context, {
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required VoidCallback onTap,
-  }) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: const Color(0xFF6B9AC4),
-          child: Icon(icon, color: Colors.white),
-        ),
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Text(subtitle),
-        trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-        onTap: onTap,
-      ),
-    );
-  }
-  
-  Widget _buildShippingOption(BuildContext context, String name, String price, String duration) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: ListTile(
-        leading: const Icon(Icons.local_shipping, color: Color(0xFF6B9AC4)),
-        title: Text(name),
-        subtitle: Text('$duration • $price'),
-        trailing: Radio(value: name, groupValue: 'Aramex', onChanged: (v) {}),
-      ),
+        );
+        
+        // الرجوع للصفحة الرئيسية
+        Navigator.of(context).popUntil((route) => route.isFirst);
+      },
     );
   }
 }

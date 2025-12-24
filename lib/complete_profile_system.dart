@@ -4,6 +4,7 @@
 // ============================================
 
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
 import 'main.dart'; // للوصول إلى Providers
@@ -134,12 +135,47 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
   }
 
   Future<void> _loadUserData() async {
-    setState(() => isLoading = true);
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      userData = UserProfileData.fromPrefs(prefs);
-      isLoading = false;
-    });
+    try {
+      setState(() => isLoading = true);
+      
+      // Add timeout to prevent infinite loading
+      final prefs = await SharedPreferences.getInstance()
+          .timeout(const Duration(seconds: 5));
+      
+      if (mounted) {
+        setState(() {
+          userData = UserProfileData.fromPrefs(prefs);
+          isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Profile load error: $e');
+      }
+      
+      // Show default data even on error
+      if (mounted) {
+        setState(() {
+          userData = UserProfileData(
+            name: 'أحمد محمد علي',
+            email: 'ahmed.mohamed@email.com',
+            phone: '+249 91 234 5678',
+            city: 'الخرطوم',
+            district: 'الخرطوم 2',
+            role: 'مشتري',
+            joinDate: '2024-01-15',
+          );
+          isLoading = false;
+        });
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('تم تحميل البيانات الافتراضية'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -987,155 +1023,4 @@ class _AddNewAddressScreenState extends State<AddNewAddressScreen> {
   }
 }
 
-// ========== صفحة سجل الطلبات ==========
-class MyOrdersHistoryScreen extends StatelessWidget {
-  const MyOrdersHistoryScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final lang = Provider.of<LanguageProvider>(context);
-    
-    // بيانات تجريبية للطلبات
-    final orders = [
-      {
-        'id': 'ORD-001',
-        'date': '2024-12-25',
-        'status': 'تم التوصيل',
-        'statusEn': 'Delivered',
-        'total': 1250,
-        'items': 3,
-        'color': Colors.green,
-      },
-      {
-        'id': 'ORD-002',
-        'date': '2024-12-28',
-        'status': 'قيد التوصيل',
-        'statusEn': 'In Delivery',
-        'total': 890,
-        'items': 2,
-        'color': Colors.blue,
-      },
-      {
-        'id': 'ORD-003',
-        'date': '2025-01-02',
-        'status': 'قيد المعالجة',
-        'statusEn': 'Processing',
-        'total': 2350,
-        'items': 5,
-        'color': Colors.orange,
-      },
-      {
-        'id': 'ORD-004',
-        'date': '2025-01-05',
-        'status': 'ملغي',
-        'statusEn': 'Cancelled',
-        'total': 450,
-        'items': 1,
-        'color': Colors.red,
-      },
-    ];
-    
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(lang.translate('طلباتي', 'My Orders')),
-        backgroundColor: const Color(0xFF6B9AC4),
-        foregroundColor: Colors.white,
-      ),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: orders.length,
-        itemBuilder: (context, index) {
-          final order = orders[index];
-          return Card(
-            margin: const EdgeInsets.only(bottom: 12),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            child: ListTile(
-              contentPadding: const EdgeInsets.all(16),
-              leading: CircleAvatar(
-                backgroundColor: (order['color'] as Color).withValues(alpha: 0.2),
-                child: Icon(
-                  Icons.shopping_bag,
-                  color: order['color'] as Color,
-                ),
-              ),
-              title: Row(
-                children: [
-                  Text(
-                    order['id'] as String,
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  const Spacer(),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: (order['color'] as Color).withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      lang.isArabic ? order['status'] as String : order['statusEn'] as String,
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: order['color'] as Color,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              subtitle: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 8),
-                  Text('${lang.translate('التاريخ', 'Date')}: ${order['date']}'),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${lang.translate('عدد المنتجات', 'Items')}: ${order['items']}',
-                    style: TextStyle(color: Colors.grey[600], fontSize: 12),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '${lang.translate('الإجمالي', 'Total')}: ${order['total']} ${lang.translate('ج', 'SDG')}',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF6B9AC4),
-                      fontSize: 16,
-                    ),
-                  ),
-                ],
-              ),
-              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-              onTap: () {
-                // عرض تفاصيل الطلب
-                showDialog(
-                  context: context,
-                  builder: (context) => AlertDialog(
-                    title: Text('${lang.translate('تفاصيل الطلب', 'Order Details')} ${order['id']}'),
-                    content: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('${lang.translate('التاريخ', 'Date')}: ${order['date']}'),
-                        const SizedBox(height: 8),
-                        Text('${lang.translate('الحالة', 'Status')}: ${lang.isArabic ? order['status'] : order['statusEn']}'),
-                        const SizedBox(height: 8),
-                        Text('${lang.translate('عدد المنتجات', 'Items')}: ${order['items']}'),
-                        const SizedBox(height: 8),
-                        Text('${lang.translate('الإجمالي', 'Total')}: ${order['total']} ${lang.translate('ج', 'SDG')}'),
-                      ],
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: Text(lang.translate('إغلاق', 'Close')),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
-          );
-        },
-      ),
-    );
-  }
-}
+// ========== صفحة إضافة عنوان

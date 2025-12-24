@@ -1,7 +1,7 @@
 name: zahrat_amal
 description: "سوق السودان الذكي - زهرة الأمل"
 publish_to: 'none'
-version: 2.5.0+5
+version: 6.2.0+7
 
 environment:
   sdk: ^3.9.2
@@ -31,6 +31,15 @@ dependencies:
   image_picker: ^1.1.2
   path_provider: ^2.1.5
   http: 1.5.0
+  
+  # 🚀 Performance Optimization - NEW
+  hive: 2.2.3                          # Local database
+  hive_flutter: 1.1.0                  # Hive Flutter integration
+  flutter_image_compress: ^2.1.0       # Image compression
+  cached_network_image: ^3.3.1         # Image caching
+  
+  # 🔐 Security & Advanced Features
+  crypto: ^3.0.3                       # Cryptographic functions (for receipts & auth)
 
 dev_dependencies:
   flutter_test:

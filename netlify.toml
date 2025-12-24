@@ -1,0 +1,52 @@
+# Netlify configuration for ZahratAmal Flutter Apps
+
+# Configuration for Official App (main site)
+[build]
+  base = "flutter_app"
+  command = "flutter build web --release"
+  publish = "build/web"
+
+[build.environment]
+  FLUTTER_VERSION = "3.35.4"
+  DART_VERSION = "3.9.2"
+
+# Redirect rules for single-page application
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Headers for better performance and security
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "SAMEORIGIN"
+    X-XSS-Protection = "1; mode=block"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.js"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.css"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Context-specific builds
+[context.production]
+  command = "flutter build web --release"
+
+[context.deploy-preview]
+  command = "flutter build web --release"
+
+[context.branch-deploy]
+  command = "flutter build web --release"
