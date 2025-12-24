@@ -5,9 +5,9 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:intl/intl.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:flutter/services.dart';
 import 'dart:io';
 import 'firebase_options.dart';
 
@@ -1155,6 +1155,7 @@ class CouponsScreen extends StatelessWidget {
   }
 }
 
+import 'package:flutter/services.dart';
 
 // ============ CHAT SCREEN ============
 
