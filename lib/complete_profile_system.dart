@@ -7,6 +7,9 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
 import 'main.dart'; // للوصول إلى Providers
+import 'profile_image_upload.dart'; // نظام رفع الصور
+import 'firebase_orders_system.dart'; // نظام الطلبات مع Firebase
+import 'notifications_system.dart' as notify_system; // نظام الإشعارات
 
 // ========== نموذج بيانات المستخدم ==========
 class UserProfileData {
@@ -206,7 +209,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                         onTap: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (context) => const MyOrdersHistoryScreen()),
+                            MaterialPageRoute(builder: (context) => const FirebaseOrdersHistoryScreen()),
                           );
                         },
                       ),
@@ -237,9 +240,14 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                       ListTile(
                         leading: const Icon(Icons.notifications, color: Color(0xFF6B9AC4)),
                         title: Text(langProvider.translate('الإشعارات', 'Notifications')),
-                        subtitle: Text(langProvider.translate('إعدادات الإشعارات', 'Notification settings')),
+                        subtitle: Text(langProvider.translate('إدارة الإشعارات', 'Manage notifications')),
                         trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                        onTap: () {},
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const notify_system.NotificationsScreen()),
+                          );
+                        },
                       ),
                     ],
                   ),
@@ -277,37 +285,10 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
     return Center(
       child: Column(
         children: [
-          Stack(
-            children: [
-              CircleAvatar(
-                radius: 60,
-                backgroundColor: const Color(0xFF6B9AC4),
-                backgroundImage: data.profileImage != null
-                    ? NetworkImage(data.profileImage!)
-                    : null,
-                child: data.profileImage == null
-                    ? const Icon(Icons.person, size: 60, color: Colors.white)
-                    : null,
-              ),
-              Positioned(
-                bottom: 0,
-                right: 0,
-                child: GestureDetector(
-                  onTap: () {
-                    // رفع صورة البروفايل
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF6B9AC4),
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 2),
-                    ),
-                    child: const Icon(Icons.camera_alt, size: 20, color: Colors.white),
-                  ),
-                ),
-              ),
-            ],
+          ProfileImageWidget(
+            imageUrl: data.profileImage,
+            radius: 60,
+            onImageChanged: _loadUserData,
           ),
           const SizedBox(height: 16),
           Text(
