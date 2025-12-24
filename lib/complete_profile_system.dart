@@ -10,6 +10,7 @@ import 'main.dart'; // للوصول إلى Providers
 import 'profile_image_upload.dart'; // نظام رفع الصور
 import 'firebase_orders_system.dart'; // نظام الطلبات مع Firebase
 import 'notifications_system.dart' as notify_system; // نظام الإشعارات
+import 'delivery_office_selection.dart' as delivery_selection; // نظام اختيار مكاتب التوصيل
 
 // ========== نموذج بيانات المستخدم ==========
 class UserProfileData {
@@ -223,6 +224,26 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(builder: (context) => const AddressManagementScreen()),
+                          );
+                        },
+                      ),
+                      const Divider(height: 1),
+                      ListTile(
+                        leading: const Icon(Icons.local_shipping, color: Color(0xFF6B9AC4)),
+                        title: Text(langProvider.translate('مكاتب التوصيل', 'Delivery Offices')),
+                        subtitle: Text(langProvider.translate('اختر مكتب التوصيل', 'Choose delivery office')),
+                        trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                        onTap: () async {
+                          final prefs = await SharedPreferences.getInstance();
+                          final userCity = prefs.getString('city') ?? '';
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => delivery_selection.DeliveryOfficeSelectionScreen(
+                                userRole: 'buyer',
+                                userCity: userCity.isNotEmpty ? userCity : null,
+                              ),
+                            ),
                           );
                         },
                       ),
