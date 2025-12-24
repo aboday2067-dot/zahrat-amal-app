@@ -1,0 +1,55 @@
+[build]
+  command = """
+    # Install Flutter SDK
+    if [ ! -d "$HOME/flutter" ]; then
+      echo "📥 Downloading Flutter SDK..."
+      git clone --depth 1 --branch 3.35.4 https://github.com/flutter/flutter.git $HOME/flutter
+    fi
+    
+    # Add Flutter to PATH
+    export PATH="$HOME/flutter/bin:$PATH"
+    
+    # Check Flutter
+    flutter doctor -v
+    
+    # Build admin app
+    cd admin_app
+    flutter pub get
+    flutter build web --release
+  """
+  publish = "admin_app/build/web"
+
+[build.environment]
+  FLUTTER_VERSION = "3.35.4"
+  DART_VERSION = "3.9.2"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Methods = "GET, POST, OPTIONS"
+    Access-Control-Allow-Headers = "Content-Type"
+    X-Frame-Options = "ALLOWALL"
+    Content-Security-Policy = "frame-ancestors *"
+    Cache-Control = "no-cache, no-store, must-revalidate"
+
+[[headers]]
+  for = "*.js"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "*.css"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "*.wasm"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+    Content-Type = "application/wasm"
