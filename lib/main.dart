@@ -10,6 +10,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:flutter/services.dart';
 import 'dart:io';
 import 'firebase_options.dart';
+import 'complete_profile_system.dart'; // نظام الملف الشخصي المتكامل
 
 // ============ LANGUAGE PROVIDER ============
 class LanguageProvider extends ChangeNotifier {
@@ -1486,110 +1487,15 @@ class NotificationsScreen extends StatelessWidget {
 }
 
 // ============ PROFILE SCREEN ============
+// الآن يستخدم النظام المتكامل من complete_profile_system.dart
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final themeProvider = Provider.of<ThemeProvider>(context);
-    final langProvider = Provider.of<LanguageProvider>(context);
-    
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(langProvider.translate('الملف الشخصي', 'Profile')),
-        backgroundColor: const Color(0xFF6B9AC4),
-        foregroundColor: Colors.white,
-      ),
-      body: FutureBuilder<Map<String, String>>(
-        future: _loadUserData(),
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          final userData = snapshot.data!;
-
-          return ListView(
-            children: [
-              const SizedBox(height: 32),
-              const CircleAvatar(
-                radius: 60,
-                backgroundColor: Color(0xFF6B9AC4),
-                child: Icon(Icons.person, size: 60, color: Colors.white),
-              ),
-              const SizedBox(height: 16),
-              Text(userData['userName'] ?? 'المستخدم', textAlign: TextAlign.center, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-              Text(userData['userEmail'] ?? 'email@example.com', textAlign: TextAlign.center, style: const TextStyle(color: Colors.grey)),
-              const SizedBox(height: 32),
-              SwitchListTile(
-                title: Text(langProvider.translate('الوضع الليلي', 'Dark Mode')),
-                subtitle: Text(langProvider.translate('تفعيل الوضع المظلم', 'Enable Dark Theme')),
-                value: themeProvider.isDarkMode,
-                onChanged: (value) => themeProvider.toggleTheme(),
-                secondary: Icon(themeProvider.isDarkMode ? Icons.dark_mode : Icons.light_mode),
-              ),
-              ListTile(
-                leading: const Icon(Icons.language),
-                title: Text(langProvider.translate('اللغة', 'Language')),
-                subtitle: Text(langProvider.isArabic ? 'العربية' : 'English'),
-                trailing: const Icon(Icons.arrow_forward_ios),
-                onTap: () => langProvider.toggleLanguage(),
-              ),
-              ListTile(
-                leading: const Icon(Icons.analytics),
-                title: Text(langProvider.translate('التقارير', 'Reports')),
-                trailing: const Icon(Icons.arrow_forward_ios),
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const ReportsScreen()),
-                  );
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.settings),
-                title: Text(langProvider.translate('الإعدادات', 'Settings')),
-                trailing: const Icon(Icons.arrow_forward_ios),
-                onTap: () {},
-              ),
-              const SizedBox(height: 16),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: ElevatedButton(
-                  onPressed: () async {
-                    final prefs = await SharedPreferences.getInstance();
-                    await prefs.clear();
-                    if (context.mounted) {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(builder: (context) => const LoginScreen()),
-                      );
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  child: Text(langProvider.translate('تسجيل الخروج', 'Logout'), style: const TextStyle(fontSize: 18)),
-                ),
-              ),
-              const SizedBox(height: 32),
-            ],
-          );
-        },
-      ),
-    );
-  }
-
-  Future<Map<String, String>> _loadUserData() async {
-    final prefs = await SharedPreferences.getInstance();
-    return {
-      'userName': prefs.getString('userName') ?? 'المستخدم',
-      'userEmail': prefs.getString('userEmail') ?? 'email@example.com',
-    };
+    // استخدام CompleteProfileScreen من ملف النظام المتكامل
+    return const CompleteProfileScreen();
   }
 }
 
